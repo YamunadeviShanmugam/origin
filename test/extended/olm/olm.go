@@ -259,6 +259,42 @@ func hasRedHatOperatorsSource(oc *exutil.CLI) (bool, error) {
 	return false, nil
 }
 
+// isOLMSubscriptionBlockedByNetwork reports whether the test subscription or the
+// redhat-operators catalog source status contains errors typical of blocked egress
+// to the index image or registry outbound network restrictions
+func isOLMSubscriptionBlockedByNetwork(oc *exutil.CLI, subscriptionNamespace string) bool {
+	var statusJSON strings.Builder
+	if out, err := oc.AsAdmin().Run("get").Args("-n", subscriptionNamespace, "subscription", "test-operator", "-o=json").Output(); err == nil {
+		statusJSON.WriteString(out)
+	}
+	if out, err := oc.AsAdmin().Run("get").Args("-n", "openshift-marketplace", "catalogsource", "redhat-operators", "-o=json").Output(); err == nil {
+		statusJSON.WriteString(out)
+	}
+	l := strings.ToLower(statusJSON.String())
+	networkHints := []string{
+		"connection refused",
+		"connection reset by peer",
+		"context deadline exceeded",
+		"dial tcp",
+		"i/o timeout",
+		"no route to host",
+		"network is unreachable",
+		"tls handshake timeout",
+		"temporary failure in name resolution",
+		"failed to resolve",
+		"name or service not known",
+		"rpc error",
+		"code = unavailable",
+		"unavailable: connection",
+	}
+	for _, hint := range networkHints {
+		if strings.Contains(l, hint) {
+			return true
+		}
+	}
+	return false
+}
+
 // This context will cover test case: OCP-23440, author: jiazha@redhat.com
 // Uses nfd operator
 var _ = g.Describe("[sig-operator] an end user can use OLM", func() {
@@ -328,16 +364,30 @@ var _ = g.Describe("[sig-operator] an end user can use OLM", func() {
 		}
 
 		var current string
-		o.Eventually(func() string {
+		success := false
+		for start := time.Now(); time.Since(start) < 5*time.Minute; time.Sleep(time.Second) {
 			var err error
 			current, err = oc.AsAdmin().Run("get").Args("-n", oc.Namespace(), "subscription", "test-operator", "-o=jsonpath={.status.installedCSV}").Output()
 			if err != nil {
 				e2e.Logf("Failed to check test-operator, error: %v, try next round", err)
 			}
-			return current
-		}, 5*time.Minute, time.Second).ShouldNot(o.Equal(""))
+			if strings.TrimSpace(current) != "" {
+				success = true
+				break
+			}
+		}
+		if !success {
+			isHyperShift, _ := exutil.IsHypershift(context.Background(), oc.AdminConfigClient())
+			if isHyperShift && isOLMSubscriptionBlockedByNetwork(oc, oc.Namespace()) {
+				g.Skip("Skipping: OLM subscription did not populate installedCSV and catalog/subscription status indicates unreachable registry or catalog gRPC (expected on some HyperShift VPCs without registry mirrors).")
+			}
+			o.Expect(strings.TrimSpace(current)).NotTo(o.BeEmpty(), "Subscription failed to populate installedCSV on a standard cluster or on HyperShift where catalog/registry reachability appears healthy")
+		}
 
 		defer func() {
+			if strings.TrimSpace(current) == "" {
+				return
+			}
 			// clean up so that it doesn't emit an alert when namespace is deleted
 			_, err = oc.AsAdmin().Run("delete").Args("-n", oc.Namespace(), "csv", current).Output()
 			o.Expect(err).NotTo(o.HaveOccurred())
