@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -11,8 +12,11 @@ import (
 	o "github.com/onsi/gomega"
 	t "github.com/onsi/gomega/types"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
+
+	imageutil "github.com/openshift/library-go/pkg/image/imageutil"
 
 	exutil "github.com/openshift/origin/test/extended/util"
 	"github.com/openshift/origin/test/extended/util/image"
@@ -22,7 +26,40 @@ const (
 	bcOutputTemplate       = "{{with .spec.output.to}}{{.kind}} {{.name}}{{end}}"
 	bcOutputToNameTemplate = "{{ .spec.output.to.name }}"
 	bcSourceTypeTemplate   = "{{ .spec.source.type }}"
+
+	openshiftSamplesNamespace = "openshift"
 )
+
+// waitImportedImageStreamTag waits until one of tagPreferences (or any tag with history) is populated on stream in namespace.
+func waitImportedImageStreamTag(oc *exutil.CLI, namespace, stream string, tagPreferences []string) (string, error) {
+	var chosen string
+	err := wait.PollUntilContextTimeout(context.Background(), 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
+		is, err := oc.AdminImageClient().ImageV1().ImageStreams(namespace).Get(ctx, stream, metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+		for _, pref := range tagPreferences {
+			if evt, ok := imageutil.StatusHasTag(is, pref); ok && len(evt.Items) > 0 {
+				chosen = stream + ":" + pref
+				return true, nil
+			}
+		}
+		for _, st := range is.Status.Tags {
+			if len(st.Items) > 0 {
+				chosen = stream + ":" + st.Tag
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if chosen == "" {
+		return "", fmt.Errorf("no imported tags found for %s/%s", namespace, stream)
+	}
+	return chosen, nil
+}
 
 func getExpectedBCOutputMatcher(bcName string, isNames ...string) t.GomegaMatcher {
 	matcher := o.ContainSubstring("Success")
@@ -211,16 +248,28 @@ var _ = g.Describe("[sig-cli] oc builds", func() {
 			apiServer = matcher.FindString(out)
 			o.Expect(apiServer).NotTo(o.BeEmpty())
 
+			g.By("waiting for openshift sample ImageStreamTags referenced by the application template")
+			builderISTag, err := waitImportedImageStreamTag(oc, openshiftSamplesNamespace, "ruby", []string{"3.3-ubi8", "3.2-ubi8", "3.1-ubi8", "3.0-ubi8", "latest"})
+			o.Expect(err).NotTo(o.HaveOccurred())
+			mysqlISTag, err := waitImportedImageStreamTag(oc, openshiftSamplesNamespace, "mysql", []string{"8.0-el9", "8.0-el8", "8.0-el7", "8.4-el9", "latest"})
+			o.Expect(err).NotTo(o.HaveOccurred())
+			e2e.Logf("application template using BUILDER_ISTAG=%s, MYSQL_UPSTREAM_ISTAG=%s", builderISTag, mysqlISTag)
+
 			g.By("install application")
-			appObjects, _, err := oc.Run("process").Args("-f", appTemplatePath, "-l", "build=docker").Outputs()
+			appObjects, _, err := oc.Run("process").Args("-f", appTemplatePath, "-l", "build=docker",
+				"-p", "BUILDER_NAMESPACE="+openshiftSamplesNamespace,
+				"-p", "BUILDER_ISTAG="+builderISTag,
+				"-p", "MYSQL_UPSTREAM_NAMESPACE="+openshiftSamplesNamespace,
+				"-p", "MYSQL_UPSTREAM_ISTAG="+mysqlISTag,
+			).Outputs()
 			o.Expect(err).NotTo(o.HaveOccurred())
 
 			err = oc.Run("create").Args("-f", "-").InputString(appObjects).Execute()
 			o.Expect(err).NotTo(o.HaveOccurred())
 
-			// make sure the imagestream has the latest tag before trying to test it
-			err = wait.Poll(time.Second, 2*time.Minute, func() (bool, error) {
-				err := oc.Run("get").Args("istag", "ruby-27-centos7:latest").Execute()
+			// Local app-mysql:latest tracks openshift/mysql; wait until it is imported into this namespace.
+			err = wait.Poll(time.Second, 5*time.Minute, func() (bool, error) {
+				err := oc.Run("get").Args("istag", "app-mysql:latest").Execute()
 				return err == nil, nil
 			})
 			o.Expect(err).NotTo(o.HaveOccurred())

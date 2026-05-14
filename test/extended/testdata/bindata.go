@@ -35004,14 +35004,15 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildDcJson 
       "kind": "ImageStream",
       "apiVersion": "image.openshift.io/v1",
       "metadata": {
-        "name": "ruby-27-centos7"
+        "name": "app-mysql"
       },
       "spec": {
         "tags": [
           {
             "from": {
-              "kind": "DockerImage",
-              "name": "registry.redhat.io/ubi8/ruby-30:latest"
+              "kind": "ImageStreamTag",
+              "name": "${MYSQL_UPSTREAM_ISTAG}",
+              "namespace": "${MYSQL_UPSTREAM_NAMESPACE}"
             },
             "name": "latest"
           }
@@ -35064,7 +35065,8 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildDcJson 
           "dockerStrategy": {
             "from": {
               "kind": "ImageStreamTag",
-              "name": "ruby-27-centos7:latest"
+              "namespace": "${BUILDER_NAMESPACE}",
+              "name": "${BUILDER_ISTAG}"
             },
             "env": [
               {
@@ -35170,7 +35172,7 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildDcJson 
             "containers": [
               {
                 "name": "ruby-helloworld",
-                "image": "origin-ruby-sample",
+                "image": " ",
                 "ports": [
                   {
                     "containerPort": 8080,
@@ -35258,6 +35260,19 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildDcJson 
         },
         "triggers": [
           {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "ruby-helloworld-database"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "app-mysql:latest"
+              }
+            }
+          },
+          {
             "type": "ConfigChange"
           }
         ],
@@ -35275,7 +35290,7 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildDcJson 
             "containers": [
               {
                 "name": "ruby-helloworld-database",
-                "image": "registry.redhat.io/rhel8/mysql-80:latest",
+                "image": " ",
                 "ports": [
                   {
                     "containerPort": 3306,
@@ -35356,6 +35371,26 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildDcJson 
       "description": "database name",
       "value": "root",
       "required": true
+    },
+    {
+      "name": "BUILDER_NAMESPACE",
+      "description": "Namespace of the ImageStreamTag used as the Docker build strategy base image",
+      "value": "openshift"
+    },
+    {
+      "name": "BUILDER_ISTAG",
+      "description": "ImageStreamTag (stream:tag) for the Docker build strategy base image",
+      "value": "ruby:3.3-ubi8"
+    },
+    {
+      "name": "MYSQL_UPSTREAM_NAMESPACE",
+      "description": "Namespace of the ImageStreamTag tracked by app-mysql",
+      "value": "openshift"
+    },
+    {
+      "name": "MYSQL_UPSTREAM_ISTAG",
+      "description": "ImageStreamTag (stream:tag) for the MySQL image tracked by app-mysql",
+      "value": "mysql:8.0-el8"
     }
   ],
   "labels": {
@@ -35464,14 +35499,15 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildJson = 
       "kind": "ImageStream",
       "apiVersion": "image.openshift.io/v1",
       "metadata": {
-        "name": "ruby-27-centos7"
+        "name": "app-mysql"
       },
       "spec": {
         "tags": [
           {
             "from": {
-              "kind": "DockerImage",
-              "name": "registry.redhat.io/ubi8/ruby-30:latest"
+              "kind": "ImageStreamTag",
+              "name": "${MYSQL_UPSTREAM_ISTAG}",
+              "namespace": "${MYSQL_UPSTREAM_NAMESPACE}"
             },
             "name": "latest"
           }
@@ -35524,7 +35560,8 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildJson = 
           "dockerStrategy": {
             "from": {
               "kind": "ImageStreamTag",
-              "name": "ruby-27-centos7:latest"
+              "namespace": "${BUILDER_NAMESPACE}",
+              "name": "${BUILDER_ISTAG}"
             },
             "env": [
               {
@@ -35579,7 +35616,7 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildJson = 
             "containers": [
               {
                 "name": "ruby-helloworld",
-                "image": "origin-ruby-sample",
+                "image": " ",
                 "ports": [
                   {
                     "containerPort": 8080,
@@ -35657,7 +35694,8 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildJson = 
       "metadata": {
         "name": "database",
         "annotations": {
-          "template.alpha.openshift.io/wait-for-ready": "true"
+          "template.alpha.openshift.io/wait-for-ready": "true",
+          "image.openshift.io/triggers": "[{\"from\":{\"kind\":\"ImageStreamTag\",\"name\":\"app-mysql:latest\"},\"fieldPath\": \"spec.template.spec.containers[0].image\"}]"
         }
       },
       "spec": {
@@ -35681,7 +35719,7 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildJson = 
             "containers": [
               {
                 "name": "ruby-helloworld-database",
-                "image": "registry.redhat.io/rhel8/mysql-80:latest",
+                "image": " ",
                 "ports": [
                   {
                     "containerPort": 3306,
@@ -35762,6 +35800,26 @@ var _testExtendedTestdataCmdTestCmdTestdataApplicationTemplateDockerbuildJson = 
       "description": "database name",
       "value": "root",
       "required": true
+    },
+    {
+      "name": "BUILDER_NAMESPACE",
+      "description": "Namespace of the ImageStreamTag used as the Docker build strategy base image",
+      "value": "openshift"
+    },
+    {
+      "name": "BUILDER_ISTAG",
+      "description": "ImageStreamTag (stream:tag) for the Docker build strategy base image",
+      "value": "ruby:3.3-ubi8"
+    },
+    {
+      "name": "MYSQL_UPSTREAM_NAMESPACE",
+      "description": "Namespace of the ImageStreamTag tracked by app-mysql",
+      "value": "openshift"
+    },
+    {
+      "name": "MYSQL_UPSTREAM_ISTAG",
+      "description": "ImageStreamTag (stream:tag) for the MySQL image tracked by app-mysql",
+      "value": "mysql:8.0-el8"
     }
   ],
   "labels": {
