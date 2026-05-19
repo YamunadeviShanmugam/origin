@@ -1,12 +1,16 @@
 package cli
 
 import (
+	"context"
 	"os"
 	"strings"
+	"time"
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog/v2"
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	exutil "github.com/openshift/origin/test/extended/util"
@@ -122,7 +126,14 @@ var _ = g.Describe("[sig-cli] oc set image", func() {
 		o.Expect(out).To(o.ContainSubstring("nginx:1.9.1"))
 
 		g.By("setting a different, valid image on multiple resources")
-		err = oc.Run("set").Args("image", "pods,dc", "*="+openshiftCLIImageStreamTag, "--all", "--source=imagestreamtag").Execute()
+		err = wait.PollUntilContextTimeout(context.Background(), time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+			err := oc.Run("set").Args("image", "pods,dc", "*="+openshiftCLIImageStreamTag, "--all", "--source=imagestreamtag").Execute()
+			if err != nil {
+				klog.Warningf("one of pods failed when setting image %v", err)
+				return false, nil
+			}
+			return true, nil
+		})
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		image, err = trimmedGetJSONPath(oc, "pod/hello-openshift", "-o", "jsonpath={.spec.containers[0].image}")
@@ -218,7 +229,14 @@ var _ = g.Describe("[sig-cli] oc set image", func() {
 		o.Expect(out).To(o.ContainSubstring("nginx:1.9.1"))
 
 		g.By("setting a different, valid image on multiple resources")
-		err = oc.Run("set").Args("image", "pods,deployments", "*="+openshiftCLIImageStreamTag, "--all", "--source=imagestreamtag").Execute()
+		err = wait.PollUntilContextTimeout(context.Background(), time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+			err := oc.Run("set").Args("image", "pods,deployments", "*="+openshiftCLIImageStreamTag, "--all", "--source=imagestreamtag").Execute()
+			if err != nil {
+				klog.Warningf("one of pods failed when setting image %v", err)
+				return false, nil
+			}
+			return true, nil
+		})
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		image, err = trimmedGetJSONPath(oc, "pod/hello-openshift", "-o", "jsonpath={.spec.containers[0].image}")
