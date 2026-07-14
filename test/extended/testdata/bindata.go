@@ -46,7 +46,25 @@
 // test/extended/testdata/aggregator/sample-apiserver-rc.yaml
 // test/extended/testdata/aggregator/sample-apiserver-sa.yaml
 // test/extended/testdata/aggregator/sample-apiserver-service.yaml
+// test/extended/testdata/apiserver/application-template-stibuild.json
+// test/extended/testdata/apiserver/clusterresourcequota.yaml
+// test/extended/testdata/apiserver/endpointslice.yaml
+// test/extended/testdata/apiserver/hello-pod.json
+// test/extended/testdata/apiserver/ocp-70369.yaml
+// test/extended/testdata/apiserver/ocp10873-dc.yaml
+// test/extended/testdata/apiserver/ocp10873-svc.json
+// test/extended/testdata/apiserver/ocp12360-pod.yaml
+// test/extended/testdata/apiserver/ocp12360-quota.yaml
+// test/extended/testdata/apiserver/ocp53229-nefarious-pod.yaml
+// test/extended/testdata/apiserver/ocp53229-nefarious.yaml
+// test/extended/testdata/apiserver/ocp54745-pod.yaml
+// test/extended/testdata/apiserver/ocp9853-limits.yaml
+// test/extended/testdata/apiserver/ocp9853-quota.yaml
 // test/extended/testdata/apiserver/operator-kube-apiserver-cr.yaml
+// test/extended/testdata/apiserver/pod-for-ping.json
+// test/extended/testdata/apiserver/pod_with_multi_ports.json
+// test/extended/testdata/apiserver/service-monitor.yaml
+// test/extended/testdata/apiserver/skopeo-deployment.json
 // test/extended/testdata/builds/application-template-custombuild.json
 // test/extended/testdata/builds/build-postcommit/docker.yaml
 // test/extended/testdata/builds/build-postcommit/imagestreams.yaml
@@ -16357,6 +16375,1130 @@ func testExtendedTestdataAggregatorSampleApiserverServiceYaml() (*asset, error) 
 	return a, nil
 }
 
+var _testExtendedTestdataApiserverApplicationTemplateStibuildJson = []byte(`{
+    "kind": "Template",
+    "apiVersion": "template.openshift.io/v1",
+    "metadata": {
+      "name": "ruby-helloworld-sample",
+      "creationTimestamp": null,
+      "annotations": {
+        "description": "This example shows how to create a simple ruby application in openshift origin v3",
+        "iconClass": "icon-ruby",
+        "tags": "instant-app,ruby,mysql"
+      }
+    },
+    "message": "Your admin credentials are ${ADMIN_USERNAME}:${ADMIN_PASSWORD}, and your MYSQL credentials at ${MYSQL_DATABASE} are ${MYSQL_USER}:${MYSQL_PASSWORD}, useless env ${MY_ENV}",
+    "objects": [
+      {
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+          "name": "frontend",
+          "creationTimestamp": null
+        },
+        "spec": {
+          "ports": [
+            {
+              "name": "web",
+              "protocol": "TCP",
+              "port": 5432,
+              "targetPort": 8080,
+              "nodePort": 0
+            }
+          ],
+          "selector": {
+            "name": "frontend"
+          },
+          "portalIP": "",
+          "type": "ClusterIP",
+          "sessionAffinity": "None"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      },
+      {
+        "kind": "Route",
+        "apiVersion": "route.openshift.io/v1",
+        "metadata": {
+          "name": "route-edge",
+          "creationTimestamp": null
+        },
+        "spec": {
+          "to": {
+            "kind": "Service",
+            "name": "frontend"
+          },
+          "tls": {
+            "termination": "edge"
+          }
+        },
+        "status": {}
+      },
+      {
+        "kind": "ImageStream",
+        "apiVersion": "image.openshift.io/v1",
+        "metadata": {
+          "name": "origin-ruby-sample",
+          "creationTimestamp": null
+        },
+        "spec": {},
+        "status": {
+          "dockerImageRepository": ""
+        }
+      },
+      {
+        "kind": "ImageStream",
+        "apiVersion": "image.openshift.io/v1",
+        "metadata": {
+          "name": "ruby-22-centos7",
+          "creationTimestamp": null
+        },
+        "spec": {
+          "dockerImageRepository": ""
+        },
+        "status": {
+          "dockerImageRepository": ""
+        }
+      },
+      {
+        "kind": "BuildConfig",
+        "apiVersion": "build.openshift.io/v1",
+        "metadata": {
+          "name": "ruby-sample-build",
+          "creationTimestamp": null,
+          "labels": {
+            "name": "ruby-sample-build"
+          }
+        },
+        "spec": {
+          "triggers": [
+            {
+              "type": "GitHub",
+              "github": {
+                "secret": "secret101"
+              }
+            },
+            {
+              "type": "Generic",
+              "generic": {
+                "secret": "secret101"
+              }
+            },
+            {
+              "type": "ImageChange",
+              "imageChange": {}
+            },
+            {
+              "type": "ConfigChange"
+            }
+          ],
+          "source": {
+            "type": "Git",
+            "git": {
+              "uri": "https://github.com/openshift/ruby-hello-world.git"
+            }
+          },
+          "strategy": {
+            "type": "Source",
+            "sourceStrategy": {
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "ruby:latest",
+                "namespace": "openshift"
+              },
+              "env": [
+                {
+                  "name": "EXAMPLE",
+                  "value": "sample-app"
+                }
+              ]
+            }
+          },
+          "output": {
+            "to": {
+              "kind": "ImageStreamTag",
+              "name": "origin-ruby-sample:latest"
+            }
+          },
+          "postCommit": {
+            "script": "bundle exec rake test"
+          },
+          "resources": {}
+        },
+        "status": {
+          "lastVersion": 0
+        }
+      },
+      {
+        "kind": "DeploymentConfig",
+        "apiVersion": "apps.openshift.io/v1",
+        "metadata": {
+          "name": "frontend",
+          "creationTimestamp": null
+        },
+        "spec": {
+          "strategy": {
+            "type": "Rolling",
+            "rollingParams": {
+              "updatePeriodSeconds": 1,
+              "intervalSeconds": 1,
+              "timeoutSeconds": 120,
+              "pre": {
+                "failurePolicy": "Abort",
+                "execNewPod": {
+                  "command": [
+                    "/bin/true"
+                  ],
+                  "env": [
+                    {
+                      "name": "CUSTOM_VAR1",
+                      "value": "custom_value1"
+                    }
+                  ],
+                  "containerName": "ruby-helloworld"
+                }
+              },
+              "post": {
+                "failurePolicy": "Ignore",
+                "execNewPod": {
+                  "command": [
+                    "/bin/false"
+                  ],
+                  "env": [
+                    {
+                      "name": "CUSTOM_VAR2",
+                      "value": "custom_value2"
+                    }
+                  ],
+                  "containerName": "ruby-helloworld"
+                }
+              }
+            },
+            "resources": {}
+          },
+          "triggers": [
+            {
+              "type": "ImageChange",
+              "imageChangeParams": {
+                "automatic": true,
+                "containerNames": [
+                  "ruby-helloworld"
+                ],
+                "from": {
+                  "kind": "ImageStreamTag",
+                  "name": "origin-ruby-sample:latest"
+                }
+              }
+            },
+            {
+              "type": "ConfigChange"
+            }
+          ],
+          "replicas": 2,
+          "selector": {
+            "name": "frontend"
+          },
+          "template": {
+            "metadata": {
+              "creationTimestamp": null,
+              "labels": {
+                "name": "frontend"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "ruby-helloworld",
+                  "image": "origin-ruby-sample",
+                  "ports": [
+                    {
+                      "containerPort": 8080,
+                      "protocol": "TCP"
+                    }
+                  ],
+                  "env": [
+                    {
+                      "name": "ADMIN_USERNAME",
+                      "value": "${ADMIN_USERNAME}"
+                    },
+                    {
+                      "name": "ADMIN_PASSWORD",
+                      "value": "${ADMIN_PASSWORD}"
+                    },
+                    {
+                      "name": "MYSQL_USER",
+                      "value": "${MYSQL_USER}"
+                    },
+                    {
+                      "name": "MYSQL_PASSWORD",
+                      "value": "${MYSQL_PASSWORD}"
+                    },
+                    {
+                      "name": "MYSQL_DATABASE",
+                      "value": "${MYSQL_DATABASE}"
+                    }
+                  ],
+                  "resources": {},
+                  "terminationMessagePath": "/dev/termination-log",
+                  "imagePullPolicy": "IfNotPresent",
+                  "securityContext": {
+                    "capabilities": {},
+                    "privileged": false
+                  }
+                }
+              ],
+              "restartPolicy": "Always",
+              "dnsPolicy": "ClusterFirst"
+            }
+          }
+        },
+        "status": {}
+      },
+      {
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+          "name": "database",
+          "creationTimestamp": null
+        },
+        "spec": {
+          "ports": [
+            {
+              "name": "db",
+              "protocol": "TCP",
+              "port": 5434,
+              "targetPort": 3306,
+              "nodePort": 0
+            }
+          ],
+          "selector": {
+            "name": "database"
+          },
+          "portalIP": "",
+          "type": "ClusterIP",
+          "sessionAffinity": "None"
+        },
+        "status": {
+          "loadBalancer": {}
+        }
+      },
+      {
+        "kind": "DeploymentConfig",
+        "apiVersion": "apps.openshift.io/v1",
+        "metadata": {
+          "name": "database",
+          "creationTimestamp": null
+        },
+        "spec": {
+          "strategy": {
+            "type": "Recreate",
+            "recreateParams": {
+              "pre": {
+                "failurePolicy": "Abort",
+                "execNewPod": {
+                  "command": [
+                    "/bin/true"
+                  ],
+                  "env": [
+                    {
+                      "name": "CUSTOM_VAR1",
+                      "value": "custom_value1"
+                    }
+                  ],
+                  "containerName": "ruby-helloworld-database",
+                  "volumes": ["ruby-helloworld-data"]
+                }
+              },
+              "mid": {
+                "failurePolicy": "Abort",
+                "execNewPod": {
+                  "command": [
+                    "/bin/true"
+                  ],
+                  "env": [
+                    {
+                      "name": "CUSTOM_VAR2",
+                      "value": "custom_value2"
+                    }
+                  ],
+                  "containerName": "ruby-helloworld-database",
+                  "volumes": ["ruby-helloworld-data"]
+                }
+              },
+              "post": {
+                "failurePolicy": "Ignore",
+                "execNewPod": {
+                  "command": [
+                    "/bin/false"
+                  ],
+                  "env": [
+                    {
+                      "name": "CUSTOM_VAR2",
+                      "value": "custom_value2"
+                    }
+                  ],
+                  "containerName": "ruby-helloworld-database",
+                  "volumes": ["ruby-helloworld-data"]
+                }
+              }
+            },
+            "resources": {}
+          },
+          "triggers": [
+            {
+              "type": "ConfigChange"
+            }
+          ],
+          "replicas": 1,
+          "selector": {
+            "name": "database"
+          },
+          "template": {
+            "metadata": {
+              "creationTimestamp": null,
+              "labels": {
+                "name": "database"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "ruby-helloworld-database",
+                  "image": "quay.io/openshifttest/mysql@sha256:0c76fd1a2eb31b0a196c7c557e4e56a11a6a8b26d745289e75fc983602035ba5",
+                  "ports": [
+                    {
+                      "containerPort": 3306,
+                      "protocol": "TCP"
+                    }
+                  ],
+                  "env": [
+                    {
+                      "name": "MYSQL_USER",
+                      "value": "${MYSQL_USER}"
+                    },
+                    {
+                      "name": "MYSQL_PASSWORD",
+                      "value": "${MYSQL_PASSWORD}"
+                    },
+                    {
+                      "name": "MYSQL_DATABASE",
+                      "value": "${MYSQL_DATABASE}"
+                    },
+                    {
+                      "name": "MYSQL_RANDOM_ROOT_PASSWORD",
+                      "value": "yes"
+                    }
+                  ],
+                  "resources": {},
+                  "volumeMounts": [
+                    {
+                      "name": "ruby-helloworld-data",
+                      "mountPath": "/var/lib/mysql/data"
+                    }
+                  ],
+                  "terminationMessagePath": "/dev/termination-log",
+                  "imagePullPolicy": "Always",
+                  "securityContext": {
+                    "capabilities": {},
+                    "privileged": false
+                  }
+                }
+              ],
+              "volumes": [
+                {
+                  "name": "ruby-helloworld-data",
+                  "emptyDir": {
+                    "medium": ""
+                  }
+                }
+              ],
+              "restartPolicy": "Always",
+              "dnsPolicy": "ClusterFirst"
+            }
+          }
+        },
+        "status": {}
+      }
+    ],
+    "parameters": [
+      {
+        "name": "ADMIN_USERNAME",
+        "description": "administrator username",
+        "generate": "expression",
+        "from": "admin[A-Z0-9]{3}"
+      },
+      {
+        "name": "ADMIN_PASSWORD",
+        "description": "administrator password",
+        "generate": "expression",
+        "from": "[a-zA-Z0-9]{8}"
+      },
+      {
+        "name": "MYSQL_USER",
+        "description": "database username",
+        "generate": "expression",
+        "from": "user[A-Z0-9]{3}",
+        "required": true
+      },
+      {
+        "name": "MYSQL_PASSWORD",
+        "description": "database password",
+        "generate": "expression",
+        "from": "[a-zA-Z0-9]{8}",
+        "required": true
+      },
+      {
+        "name": "MYSQL_DATABASE",
+        "description": "database name",
+        "value": "mydb",
+        "required": true
+      }
+    ],
+    "labels": {
+      "template": "application-template-stibuild"
+    }
+  }
+`)
+
+func testExtendedTestdataApiserverApplicationTemplateStibuildJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverApplicationTemplateStibuildJson, nil
+}
+
+func testExtendedTestdataApiserverApplicationTemplateStibuildJson() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverApplicationTemplateStibuildJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/application-template-stibuild.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverClusterresourcequotaYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: clusterresourequotaremplate
+objects:
+  - apiVersion: quota.openshift.io/v1
+    kind: ClusterResourceQuota
+    metadata:
+      name: "${NAME}"
+    spec:
+      quota:
+        hard:
+          pods: "${{PODS_LIMIT}}"
+          secrets: "${{SECRETS_LIMIT}}"
+          cpu: "${{CPU_LIMIT}}"
+          memory: "${MEMORY_LIMIT}"
+          requests.cpu: "${{REQUESTS_CPU}}"
+          requests.memory: "${REQUEST_MEMORY}"
+          limits.cpu: "${{LIMITS_CPU}}"
+          limits.memory: "${LIMITS_MEMORY}"
+          configmaps: "${{CONFIGMAPS_LIMIT}}"
+          count/templates.template.openshift.io: "${{TEMPLATE_COUNT}}"
+          count/servicemonitors.monitoring.coreos.com: "${{SERVICE_MONITOR}}"
+          count/deployments.apps: "${{DEPLOYMENT}}"
+      selector:
+        labels:
+          matchLabels:
+            kubernetes.io/metadata.name: "${LABEL}"
+parameters:
+  - name: NAME
+  - name: LABEL
+  - name: PODS_LIMIT
+  - name: SECRETS_LIMIT
+  - name: CPU_LIMIT
+  - name: MEMORY_LIMIT
+  - name: REQUESTS_CPU
+  - name: REQUEST_MEMORY
+  - name: LIMITS_CPU
+  - name: LIMITS_MEMORY
+  - name: CONFIGMAPS_LIMIT
+  - name: TEMPLATE_COUNT
+  - name: SERVICE_MONITOR
+  - name: DEPLOYMENT
+`)
+
+func testExtendedTestdataApiserverClusterresourcequotaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverClusterresourcequotaYaml, nil
+}
+
+func testExtendedTestdataApiserverClusterresourcequotaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverClusterresourcequotaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/clusterresourcequota.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverEndpointsliceYaml = []byte(`apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: localhost-ip
+  labels:
+    kubernetes.io/service-name: ruby-ex
+addressType: IPv4
+ports:
+  - name: http
+    protocol: TCP
+    port: 80
+endpoints:
+  - addresses:
+      - "127.0.0.1"
+    conditions:
+      ready: true
+    hostname: pod-1
+`)
+
+func testExtendedTestdataApiserverEndpointsliceYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverEndpointsliceYaml, nil
+}
+
+func testExtendedTestdataApiserverEndpointsliceYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverEndpointsliceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/endpointslice.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverHelloPodJson = []byte(`{
+  "kind": "Pod",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "hello-openshift",
+    "creationTimestamp": null,
+    "labels": {
+      "name": "hello-openshift",
+      "app": "hello-openshift"
+    }
+  },
+  "spec": {
+    "containers": [
+      {
+        "name": "hello-openshift",
+        "image": "quay.io/openshifttest/hello-openshift@sha256:4200f438cf2e9446f6bcff9d67ceea1f69ed07a2f83363b7fb52529f7ddd8a83",
+        "ports": [
+          {
+            "containerPort": 8080,
+            "protocol": "TCP"
+          }
+        ],
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "tmp",
+            "mountPath": "/tmp"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {},
+          "privileged": false,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        }
+      }
+    ],
+    "volumes": [
+      {
+        "name": "tmp",
+        "emptyDir": {}
+      }
+    ],
+    "restartPolicy": "Always",
+    "dnsPolicy": "ClusterFirst",
+    "serviceAccount": ""
+  },
+  "status": {}
+}
+`)
+
+func testExtendedTestdataApiserverHelloPodJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverHelloPodJson, nil
+}
+
+func testExtendedTestdataApiserverHelloPodJson() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverHelloPodJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/hello-pod.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp70369Yaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: create-deployment
+objects:
+  - kind: Deployment
+    apiVersion: apps/v1
+    metadata:
+      name: test-deployment
+      namespace: ${NAMESPACE}
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: test-app
+      template:
+        metadata:
+          labels:
+            app: test-app
+        spec:
+          serviceAccountName: ${SERVICE_ACCOUNT_NAME}
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - resources: {}
+              name: httpd
+              securityContext:
+                capabilities:
+                  drop:
+                    - ALL
+                allowPrivilegeEscalation: false
+              image: 'image-registry.openshift-image-registry.svc:5000/openshift/httpd:latest'
+parameters:
+  - name: NAMESPACE
+  - name: SERVICE_ACCOUNT_NAME
+`)
+
+func testExtendedTestdataApiserverOcp70369YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp70369Yaml, nil
+}
+
+func testExtendedTestdataApiserverOcp70369Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp70369YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp-70369.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp10873DcYaml = []byte(`apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: nginx-config
+  data:
+    nginx.conf: |
+      events {
+          worker_connections 1024;
+      }
+
+      http {
+          server {
+              listen		8080;
+              location / {
+                  root /data/http;
+              }
+          }
+
+          server {
+              listen           	    8443 ssl http2 default;
+              listen           	    [::]:8443 ssl http2 default;
+              server_name      	    _;
+              ssl_certificate  	    certs/tls.crt;
+              ssl_certificate_key  	certs/tls.key;
+              location / {
+                  root /data/https-default;
+              }
+          }
+      }
+- apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    labels:
+      name: web-server-rc
+    name: web-server-rc
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          name: web-server-rc
+      spec:
+        containers:
+        - name: nginx
+          image: quay.io/openshifttest/nginx-alpine@sha256:04f316442d48ba60e3ea0b5a67eb89b0b667abf1c198a3d0056ca748736336a0
+          volumeMounts:
+          - name: ssl-key
+            mountPath: /etc/nginx/certs/
+          - name: nginx-config
+            mountPath: /etc/nginx/
+        volumes:
+        - name: ssl-key
+          secret:
+            secretName: ssl-key
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+`)
+
+func testExtendedTestdataApiserverOcp10873DcYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp10873DcYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp10873DcYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp10873DcYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp10873-dc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp10873SvcJson = []byte(`{
+  "kind": "Service",
+  "apiVersion": "v1",
+  "metadata": {
+    "annotations": {
+      "service.beta.openshift.io/serving-cert-secret-name": "ssl-key"
+    },
+    "labels": {
+      "name": "hello"
+    },
+    "name": "hello"
+  },
+  "spec": {
+    "ports": [
+      {
+        "name": "https",
+        "protocol": "TCP",
+        "port": 443,
+        "targetPort": 8443
+      }
+    ],
+    "selector": {
+      "name": "web-server-rc"
+    }
+  }
+}
+`)
+
+func testExtendedTestdataApiserverOcp10873SvcJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp10873SvcJson, nil
+}
+
+func testExtendedTestdataApiserverOcp10873SvcJson() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp10873SvcJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp10873-svc.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp12360PodYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: create-pod
+objects:
+  - kind: Pod
+    apiVersion: v1
+    metadata:
+      name: "${NAME}"
+      labels:
+        app: "${NAME}"
+    spec:
+      containers:
+        - name: "${NAME}"
+          image: quay.io/openshifttest/hello-openshift@sha256:4200f438cf2e9446f6bcff9d67ceea1f69ed07a2f83363b7fb52529f7ddd8a83
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: tmp
+              mountPath: "/tmp"
+          terminationMessagePath: "/dev/termination-log"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      serviceAccount: ""
+    status: {}
+parameters:
+  - name: NAME
+`)
+
+func testExtendedTestdataApiserverOcp12360PodYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp12360PodYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp12360PodYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp12360PodYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp12360-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp12360QuotaYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: create-quota
+objects:
+  - apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: "${NAME}"
+    spec:
+      hard:
+        pods: ${{POD_LIMIT}}
+        resourcequotas: ${{RQ_LIMIT}}
+        secrets: ${{SECRET_LIMIT}}
+        services: ${{SERVICE_LIMIT}}
+        configmaps: ${{CM_LIMIT}}
+parameters:
+  - name: NAME
+  - name: POD_LIMIT
+  - name: RQ_LIMIT
+  - name: SECRET_LIMIT
+  - name: SERVICE_LIMIT
+  - name: CM_LIMIT
+`)
+
+func testExtendedTestdataApiserverOcp12360QuotaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp12360QuotaYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp12360QuotaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp12360QuotaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp12360-quota.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp53229NefariousPodYaml = []byte(`apiVersion: v1
+kind: Pod
+metadata:
+   name: nefariouspod
+   annotations:
+     k8s.v1.cni.cncf.io/networks: nefarious-conf
+spec:
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: nefariouspod
+    command: ["/bin/ash", "-c", "trap : TERM INT; sleep infinity & wait"]
+    image: "quay.io/openshifttest/hello-openshift@sha256:4200f438cf2e9446f6bcff9d67ceea1f69ed07a2f83363b7fb52529f7ddd8a83"
+    securityContext:
+      allowPrivilegeEscalation: false
+`)
+
+func testExtendedTestdataApiserverOcp53229NefariousPodYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp53229NefariousPodYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp53229NefariousPodYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp53229NefariousPodYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp53229-nefarious-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp53229NefariousYaml = []byte(`apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+    name: nefarious-conf
+spec:
+  config: '{
+    "cniVersion": "0.3.0",
+    "name": "nefarious-config",
+    "type": "../../../../usr/sbin/reboot"
+    }'
+`)
+
+func testExtendedTestdataApiserverOcp53229NefariousYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp53229NefariousYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp53229NefariousYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp53229NefariousYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp53229-nefarious.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp54745PodYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: create-pod
+objects:
+  - kind: Pod
+    apiVersion: v1
+    metadata:
+      labels:
+        app: "${NAME}"
+      name: "${NAME}"
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: "${NAME}"
+          image: "quay.io/openshifttest/hello-openshift@sha256:4200f438cf2e9446f6bcff9d67ceea1f69ed07a2f83363b7fb52529f7ddd8a83"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          resources:
+            requests:
+              memory: "${REQUEST_MEMORY}"
+              cpu: "${REQUEST_CPU}"
+            limits:
+              memory: "${LIMITS_MEMORY}"
+              cpu: "${LIMITS_CPU}"
+parameters:
+  - name: NAME
+  - name: REQUEST_MEMORY
+  - name: REQUEST_CPU
+  - name: LIMITS_MEMORY
+  - name: LIMITS_CPU
+`)
+
+func testExtendedTestdataApiserverOcp54745PodYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp54745PodYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp54745PodYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp54745PodYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp54745-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp9853LimitsYaml = []byte(`apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limits
+spec:
+  limits:
+    - max:
+        cpu: 500m
+        memory: 750Mi
+      min:
+        cpu: 10m
+        memory: 5Mi
+      type: Pod
+    - default:
+        cpu: 130m
+        memory: 120Mi
+      defaultRequest:
+        cpu: 110m
+        memory: 100Mi
+      maxLimitRequestRatio:
+        cpu: 10
+        memory: 8
+      max:
+        cpu: 400m
+        memory: 750Mi
+      min:
+        cpu: 10m
+        memory: 5Mi
+      type: Container
+`)
+
+func testExtendedTestdataApiserverOcp9853LimitsYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp9853LimitsYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp9853LimitsYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp9853LimitsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp9853-limits.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverOcp9853QuotaYaml = []byte(`apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: myquota
+spec:
+  hard:
+    cpu: "30"
+    memory: 16Gi
+    persistentvolumeclaims: "20"
+    pods: "20"
+    replicationcontrollers: "30"
+    resourcequotas: "1"
+    secrets: "15"
+    services: "10"
+    configmaps: "15"
+`)
+
+func testExtendedTestdataApiserverOcp9853QuotaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverOcp9853QuotaYaml, nil
+}
+
+func testExtendedTestdataApiserverOcp9853QuotaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverOcp9853QuotaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/ocp9853-quota.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataApiserverOperatorKubeApiserverCrYaml = []byte(`apiVersion: operator.openshift.io/v1
 kind: KubeAPIServer
 metadata:
@@ -16380,6 +17522,191 @@ func testExtendedTestdataApiserverOperatorKubeApiserverCrYaml() (*asset, error) 
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/apiserver/operator-kube-apiserver-cr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverPodForPingJson = []byte(`{
+  "kind": "Pod",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "pod-for-ping",
+    "labels": {
+      "name": "pod-for-ping"
+    }
+  },
+  "spec": {
+    "containers": [
+      {
+        "name": "pod-for-ping",
+        "image": "quay.io/openshifttest/hello-sdn@sha256:c89445416459e7adea9a5a416b3365ed3d74f2491beb904d61dc8d1eb89a72a4",
+        "resources": {
+          "limits": {
+            "memory": "340Mi"
+          }
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {},
+          "privileged": false,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        }
+      }
+    ]
+  }
+}
+`)
+
+func testExtendedTestdataApiserverPodForPingJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverPodForPingJson, nil
+}
+
+func testExtendedTestdataApiserverPodForPingJson() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverPodForPingJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/pod-for-ping.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverPod_with_multi_portsJson = []byte(`{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "hello-openshift",
+        "labels": {
+            "app": "hello-openshift"
+        }
+    },
+    "spec": {
+        "containers": [
+            {
+                "name": "hello-openshift",
+                "image": "quay.io/openshifttest/nginx-alpine:1.2.1"
+            }
+        ]
+    }
+}
+`)
+
+func testExtendedTestdataApiserverPod_with_multi_portsJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverPod_with_multi_portsJson, nil
+}
+
+func testExtendedTestdataApiserverPod_with_multi_portsJson() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverPod_with_multi_portsJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/pod_with_multi_ports.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverServiceMonitorYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: servicemonitortemplate
+objects:
+  - apiVersion: monitoring.coreos.com/v1
+    kind: ServiceMonitor
+    metadata:
+      name: "${NAME}"
+    spec:
+      endpoints:
+        - path: /metrics
+          port: http
+          scheme: http
+      jobLabel: component
+      selector:
+        matchLabels:
+          deployment: "${DEPLOYMENT}"
+parameters:
+  - name: NAME
+  - name: DEPLOYMENT
+`)
+
+func testExtendedTestdataApiserverServiceMonitorYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverServiceMonitorYaml, nil
+}
+
+func testExtendedTestdataApiserverServiceMonitorYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverServiceMonitorYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/service-monitor.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverSkopeoDeploymentJson = []byte(`{
+    "apiVersion": "apps.openshift.io/v1",
+    "kind": "DeploymentConfig",
+    "metadata": {
+        "labels": {
+            "name": "skopeo"
+        },
+        "name": "skopeo"
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+            "name": "skopeo"
+        },
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "skopeo"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "args": [
+                            "bash",
+                            "-c",
+                            "while : ; do sleep 15m ; done"
+                        ],
+                        "image": "quay.io/openshifttest/skopeo@sha256:d5f288968744a8880f983e49870c0bfcf808703fe126e4fb5fc393fb9e599f65",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "skopeo",
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File"
+                    }
+                ],
+                "restartPolicy": "Always",
+                "terminationGracePeriodSeconds": 30
+            }
+        },
+        "triggers": [
+            {
+                "type": "ConfigChange"
+            }
+        ]
+    }
+}
+`)
+
+func testExtendedTestdataApiserverSkopeoDeploymentJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverSkopeoDeploymentJson, nil
+}
+
+func testExtendedTestdataApiserverSkopeoDeploymentJson() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverSkopeoDeploymentJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/skopeo-deployment.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -56370,7 +57697,25 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/aggregator/sample-apiserver-rc.yaml":                                             testExtendedTestdataAggregatorSampleApiserverRcYaml,
 	"test/extended/testdata/aggregator/sample-apiserver-sa.yaml":                                             testExtendedTestdataAggregatorSampleApiserverSaYaml,
 	"test/extended/testdata/aggregator/sample-apiserver-service.yaml":                                        testExtendedTestdataAggregatorSampleApiserverServiceYaml,
+	"test/extended/testdata/apiserver/application-template-stibuild.json":                                    testExtendedTestdataApiserverApplicationTemplateStibuildJson,
+	"test/extended/testdata/apiserver/clusterresourcequota.yaml":                                             testExtendedTestdataApiserverClusterresourcequotaYaml,
+	"test/extended/testdata/apiserver/endpointslice.yaml":                                                    testExtendedTestdataApiserverEndpointsliceYaml,
+	"test/extended/testdata/apiserver/hello-pod.json":                                                        testExtendedTestdataApiserverHelloPodJson,
+	"test/extended/testdata/apiserver/ocp-70369.yaml":                                                        testExtendedTestdataApiserverOcp70369Yaml,
+	"test/extended/testdata/apiserver/ocp10873-dc.yaml":                                                      testExtendedTestdataApiserverOcp10873DcYaml,
+	"test/extended/testdata/apiserver/ocp10873-svc.json":                                                     testExtendedTestdataApiserverOcp10873SvcJson,
+	"test/extended/testdata/apiserver/ocp12360-pod.yaml":                                                     testExtendedTestdataApiserverOcp12360PodYaml,
+	"test/extended/testdata/apiserver/ocp12360-quota.yaml":                                                   testExtendedTestdataApiserverOcp12360QuotaYaml,
+	"test/extended/testdata/apiserver/ocp53229-nefarious-pod.yaml":                                           testExtendedTestdataApiserverOcp53229NefariousPodYaml,
+	"test/extended/testdata/apiserver/ocp53229-nefarious.yaml":                                               testExtendedTestdataApiserverOcp53229NefariousYaml,
+	"test/extended/testdata/apiserver/ocp54745-pod.yaml":                                                     testExtendedTestdataApiserverOcp54745PodYaml,
+	"test/extended/testdata/apiserver/ocp9853-limits.yaml":                                                   testExtendedTestdataApiserverOcp9853LimitsYaml,
+	"test/extended/testdata/apiserver/ocp9853-quota.yaml":                                                    testExtendedTestdataApiserverOcp9853QuotaYaml,
 	"test/extended/testdata/apiserver/operator-kube-apiserver-cr.yaml":                                       testExtendedTestdataApiserverOperatorKubeApiserverCrYaml,
+	"test/extended/testdata/apiserver/pod-for-ping.json":                                                     testExtendedTestdataApiserverPodForPingJson,
+	"test/extended/testdata/apiserver/pod_with_multi_ports.json":                                             testExtendedTestdataApiserverPod_with_multi_portsJson,
+	"test/extended/testdata/apiserver/service-monitor.yaml":                                                  testExtendedTestdataApiserverServiceMonitorYaml,
+	"test/extended/testdata/apiserver/skopeo-deployment.json":                                                testExtendedTestdataApiserverSkopeoDeploymentJson,
 	"test/extended/testdata/builds/application-template-custombuild.json":                                    testExtendedTestdataBuildsApplicationTemplateCustombuildJson,
 	"test/extended/testdata/builds/build-postcommit/docker.yaml":                                             testExtendedTestdataBuildsBuildPostcommitDockerYaml,
 	"test/extended/testdata/builds/build-postcommit/imagestreams.yaml":                                       testExtendedTestdataBuildsBuildPostcommitImagestreamsYaml,
@@ -56957,7 +58302,25 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"sample-apiserver-service.yaml":       {testExtendedTestdataAggregatorSampleApiserverServiceYaml, map[string]*bintree{}},
 				}},
 				"apiserver": {nil, map[string]*bintree{
-					"operator-kube-apiserver-cr.yaml": {testExtendedTestdataApiserverOperatorKubeApiserverCrYaml, map[string]*bintree{}},
+					"application-template-stibuild.json": {testExtendedTestdataApiserverApplicationTemplateStibuildJson, map[string]*bintree{}},
+					"clusterresourcequota.yaml":          {testExtendedTestdataApiserverClusterresourcequotaYaml, map[string]*bintree{}},
+					"endpointslice.yaml":                 {testExtendedTestdataApiserverEndpointsliceYaml, map[string]*bintree{}},
+					"hello-pod.json":                     {testExtendedTestdataApiserverHelloPodJson, map[string]*bintree{}},
+					"ocp-70369.yaml":                     {testExtendedTestdataApiserverOcp70369Yaml, map[string]*bintree{}},
+					"ocp10873-dc.yaml":                   {testExtendedTestdataApiserverOcp10873DcYaml, map[string]*bintree{}},
+					"ocp10873-svc.json":                  {testExtendedTestdataApiserverOcp10873SvcJson, map[string]*bintree{}},
+					"ocp12360-pod.yaml":                  {testExtendedTestdataApiserverOcp12360PodYaml, map[string]*bintree{}},
+					"ocp12360-quota.yaml":                {testExtendedTestdataApiserverOcp12360QuotaYaml, map[string]*bintree{}},
+					"ocp53229-nefarious-pod.yaml":        {testExtendedTestdataApiserverOcp53229NefariousPodYaml, map[string]*bintree{}},
+					"ocp53229-nefarious.yaml":            {testExtendedTestdataApiserverOcp53229NefariousYaml, map[string]*bintree{}},
+					"ocp54745-pod.yaml":                  {testExtendedTestdataApiserverOcp54745PodYaml, map[string]*bintree{}},
+					"ocp9853-limits.yaml":                {testExtendedTestdataApiserverOcp9853LimitsYaml, map[string]*bintree{}},
+					"ocp9853-quota.yaml":                 {testExtendedTestdataApiserverOcp9853QuotaYaml, map[string]*bintree{}},
+					"operator-kube-apiserver-cr.yaml":    {testExtendedTestdataApiserverOperatorKubeApiserverCrYaml, map[string]*bintree{}},
+					"pod-for-ping.json":                  {testExtendedTestdataApiserverPodForPingJson, map[string]*bintree{}},
+					"pod_with_multi_ports.json":          {testExtendedTestdataApiserverPod_with_multi_portsJson, map[string]*bintree{}},
+					"service-monitor.yaml":               {testExtendedTestdataApiserverServiceMonitorYaml, map[string]*bintree{}},
+					"skopeo-deployment.json":             {testExtendedTestdataApiserverSkopeoDeploymentJson, map[string]*bintree{}},
 				}},
 				"builds": {nil, map[string]*bintree{
 					"application-template-custombuild.json": {testExtendedTestdataBuildsApplicationTemplateCustombuildJson, map[string]*bintree{}},
