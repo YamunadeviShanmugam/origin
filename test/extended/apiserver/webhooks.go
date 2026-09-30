@@ -498,7 +498,7 @@ var _ = g.Describe("[sig-api-machinery][Feature:APIServer][Feature:UpgradeWebhoo
 			compareAPIServerWebhookConditions(oc, "", "False", webhookConditionErrors)
 		})
 
-	g.It("[OTP][OCP-50188] Prepare upgrade cluster under APF stress [Slow][Disruptive][apigroup:config.openshift.io][Timeout:40m]",
+	g.It("[OTP][OCP-40667] Prepare upgrade cluster under APF stress [Slow][Disruptive][apigroup:config.openshift.io][Timeout:40m]",
 		ote.Informing(), func() {
 			dirname := "/tmp/-OCP-40667/"
 			exceptions := "panicked: false"
