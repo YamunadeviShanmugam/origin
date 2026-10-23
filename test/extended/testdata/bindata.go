@@ -46,6 +46,7 @@
 // test/extended/testdata/aggregator/sample-apiserver-rc.yaml
 // test/extended/testdata/aggregator/sample-apiserver-sa.yaml
 // test/extended/testdata/aggregator/sample-apiserver-service.yaml
+// test/extended/testdata/apiserver/aosqe-pod-for-ping.json
 // test/extended/testdata/apiserver/application-template-stibuild.json
 // test/extended/testdata/apiserver/kube-burner-cpu-stress-pod.yml
 // test/extended/testdata/apiserver/kube-burner-cpu-stress.yml
@@ -16362,6 +16363,44 @@ func testExtendedTestdataAggregatorSampleApiserverServiceYaml() (*asset, error) 
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/aggregator/sample-apiserver-service.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverAosqePodForPingJson = []byte(`{
+  "kind": "Pod",
+  "apiVersion":"v1",
+  "metadata": {
+        "name": "hello-pod",
+        "labels": {
+                "name": "hello-pod"
+        }
+  },
+  "spec": {
+      "containers": [{
+        "name": "hello-pod",
+        "image": "quay.io/openshifttest/hello-sdn@sha256:c89445416459e7adea9a5a416b3365ed3d74f2491beb904d61dc8d1eb89a72a4",
+        "resources":{
+          "limits":{
+            "memory":"340Mi"
+          }
+        }
+      }]
+  }
+}
+`)
+
+func testExtendedTestdataApiserverAosqePodForPingJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverAosqePodForPingJson, nil
+}
+
+func testExtendedTestdataApiserverAosqePodForPingJson() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverAosqePodForPingJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserver/aosqe-pod-for-ping.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -57256,6 +57295,7 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/aggregator/sample-apiserver-rc.yaml":                                             testExtendedTestdataAggregatorSampleApiserverRcYaml,
 	"test/extended/testdata/aggregator/sample-apiserver-sa.yaml":                                             testExtendedTestdataAggregatorSampleApiserverSaYaml,
 	"test/extended/testdata/aggregator/sample-apiserver-service.yaml":                                        testExtendedTestdataAggregatorSampleApiserverServiceYaml,
+	"test/extended/testdata/apiserver/aosqe-pod-for-ping.json":                                               testExtendedTestdataApiserverAosqePodForPingJson,
 	"test/extended/testdata/apiserver/application-template-stibuild.json":                                    testExtendedTestdataApiserverApplicationTemplateStibuildJson,
 	"test/extended/testdata/apiserver/kube-burner-cpu-stress-pod.yml":                                        testExtendedTestdataApiserverKubeBurnerCpuStressPodYml,
 	"test/extended/testdata/apiserver/kube-burner-cpu-stress.yml":                                            testExtendedTestdataApiserverKubeBurnerCpuStressYml,
@@ -57852,6 +57892,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"sample-apiserver-service.yaml":       {testExtendedTestdataAggregatorSampleApiserverServiceYaml, map[string]*bintree{}},
 				}},
 				"apiserver": {nil, map[string]*bintree{
+					"aosqe-pod-for-ping.json":            {testExtendedTestdataApiserverAosqePodForPingJson, map[string]*bintree{}},
 					"application-template-stibuild.json": {testExtendedTestdataApiserverApplicationTemplateStibuildJson, map[string]*bintree{}},
 					"kube-burner-cpu-stress-pod.yml":     {testExtendedTestdataApiserverKubeBurnerCpuStressPodYml, map[string]*bintree{}},
 					"kube-burner-cpu-stress.yml":         {testExtendedTestdataApiserverKubeBurnerCpuStressYml, map[string]*bintree{}},
